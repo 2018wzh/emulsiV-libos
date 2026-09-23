@@ -32,7 +32,8 @@
     "PlayGround and VeriSpecOSLab report the same MCPX runtime PID and host properties; they are not verified independent execution hosts.",
     "Creating a dedicated PlayGround session failed with database or disk is full (13).",
     "A diagnostic execute request in an existing session returned HTTP 502; no successful command output or execution task ID was received.",
-    "Subsequent LabWeaver project query and workspace list returned HTTP 502."
+    "Subsequent LabWeaver project query and workspace list returned HTTP 502.",
+    "A later progress call and session list succeeded, but creating a dedicated project session again failed with database or disk is full (13); query responsiveness did not establish recovered write capability."
   ],
   "unverified": [
     "disk free bytes",

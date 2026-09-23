@@ -36,6 +36,9 @@ MCPX 返回 5 个已注册工作区。成功读取的 PlayGround 与 VeriSpecOSL
 没有取得有效命令输出或新任务 ID，无法确认可用磁盘空间、已安装 RV32I 目标或 GitHub CLI 认证。
 未删除、清理或覆盖用户现有项目。详见 [environment-selection.json](verification/environment-selection.json)。
 
+末次复核中进度上报与会话查询恢复响应，但再次创建独立项目会话仍报数据库或磁盘已满。
+接口能响应不等于开发会话已经可写。
+
 本次没有确认到可执行验证和发布的 MCPX 环境；没有把本地容器称作 MCPX 环境。
 `/home/wzh/PlayGround/emulsiV-libos` 的创建与 GitHub 推送均未完成。
 
