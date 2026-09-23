@@ -1,19 +1,28 @@
-# emulsiV-libos v0.1.0-preview.1
+# emulsiV-libos v0.1.0-preview.2
 
-Rust no_std 教学型 libOS，包含 TextIO、GPIO、RGB332 Bitmap、裸机运行时，
-以及固定容量容器、行编辑、协作调度、消抖、软件 PWM、图形和 20 个参考程序。
+This preview adds an optional reclaiming heap and a Rust-only task implementation.
+The target library still has no third-party dependencies.
+The default configuration still uses no global heap.
 
-实际验收：47 项默认配置 Rust 测试、48 项 format 测试、35 项 Python 测试，
-20 个固件构建和 ISA/RAM 审计、100 次汇编中断往返，
-9 个独立 CPU 固件场景，官方核心 20 例启动和 10 项交互/显示检查。
-上游提交：9e15421cd33511d4d2911fea1ae41cd65f33dae9。
+The heap supports aligned allocation, release, zeroing, reallocation, usage statistics, and recoverable OOM.
+Five new examples exercise Box, Vec, String, repeated reuse, and failed allocation recovery.
+All 25 examples retain the stock RAM map and a 512-byte stack reservation.
 
-固件 ZIP 内含 20 个可加载的 Intel HEX、验证日志、JSON 报告以及逐文件 SHA256 manifest。
-先加载 firmware/hello.hex 或 firmware/bitmap_palette.hex，完整复位后运行。
-Shell 用分号提交，例如 p 16 16 0xe0; 画红点，w 1; 控制低位 GPIO。
+`cargo xtask` now performs ELF/HEX conversion and audit, reference execution, official-core validation, assembly ABI checks, documentation checks, packaging, and GitHub publication.
+The official JavaScript modules execute through the Rust Boa engine without Node.
+The previous scripts remain only as archived historical text.
 
-注意：Bitmap 原生编码为 RGB332，不是三位八色。Shell 保留 512 字节栈后，
-静态空间仅余 32 字节。已测 Shell 栈使用 160 字节不是最坏情况上界证明。
-浏览器完整 UI 端到端测试尚未执行。软件 tick 不是毫秒，不提供 POSIX、MMU、网络或抢占式线程。
+English and Chinese README files cover setup, feature selection, heap limits, examples, integration, troubleshooting, validation, and publication.
+The distributed Cargo package is checked with a separate downstream heap application.
+The firmware ZIP includes 25 HEX images, ELF files, verification evidence, and a SHA256 manifest.
+The `.crate` attachment is verified but has not been uploaded to crates.io by this command.
 
-这是预览版，API 和内存开销可能随后续修订变化。完整边界见 docs/VERIFICATION.md。
+Limitations: this is an educational preview, not a production OS.
+Tests do not cover the full browser UI or prove worst-case stack usage or memory safety.
+Heap allocation rounds to 16-byte units. Fragmentation and temporary reallocation space can cause OOM.
+TextIO is still a one-byte latch, and software ticks are not milliseconds.
+
+中文：本版新增可回收堆、五个堆示例和纯 Rust xtask，保留默认无堆模式及原内存边界。
+发布包包含 25 个固件、验证证据和摘要清单，双语 README 已补齐完整使用流程。
+官方核心测试由 Rust Boa 执行，不依赖 Node。Cargo 包包含独立下游应用验证。
+这仍是教学预览版，不声称完整浏览器 UI 验收、形式化安全证明或 crates.io 已发布。

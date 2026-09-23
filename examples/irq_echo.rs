@@ -8,7 +8,9 @@ os::interrupt!(on_interrupt);
 fn on_interrupt() {
     let mut bus = unsafe { Mmio::new() };
     let mut io = os::textio::TextIo::new(&mut bus);
-    if let Some(byte) = io.try_read() { io.put_byte(byte); }
+    if let Some(byte) = io.try_read() {
+        io.put_byte(byte);
+    }
 }
 fn main() -> ! {
     let mut bus = unsafe { Mmio::new() };

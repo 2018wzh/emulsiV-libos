@@ -4,7 +4,7 @@ use emulsiv_libos as os;
 use os::bus::Mmio;
 os::entry!(main);
 
-use os::event::{Event,EventQueue};
+use os::event::{Event, EventQueue};
 fn main() -> ! {
     let mut bus = unsafe { Mmio::new() };
     let mut queue = EventQueue::<4>::new();
@@ -17,7 +17,9 @@ fn main() -> ! {
         while let Some(event) = queue.pop() {
             if let Event::Text(b) = event {
                 os::textio::TextIo::new(&mut bus).put_byte(b);
-                if b == b' ' { os::gpio::Gpio::new(&mut bus).toggle(1); }
+                if b == b' ' {
+                    os::gpio::Gpio::new(&mut bus).toggle(1);
+                }
             }
         }
     }

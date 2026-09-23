@@ -1,79 +1,88 @@
-# 验证记录
+# Verification / 验证
 
-日期：2026-09-23。以下是恢复后的 MCPX 远端实际执行结果，不是待运行测试列表。
+Version: 0.1.0-preview.2.
+This document specifies the release gates and evidence format.
+The generated evidence and the Actions run establish whether a particular source commit passed.
+Do not apply a previous commit's result to modified source.
 
-## 环境与源码恢复
-
-工作区：`PlayGround/emulsiV-libos`，Arch Linux x86_64。
-使用固定 Rust 1.85.1、`riscv32i-unknown-none-elf`、Clang 22.1.8、
-Rust 自带 `rust-lld`、Python 3.14.7 和 Node 26.8.2。
-原 Git 提交 `a3f54000db77b05623bfea056a6dfa9c4d09abd5` 已精确恢复并通过 git fsck，
-当前修复提交建立在原历史之上。早先数据库/磁盘故障记录保留在 `verification/`，
-那些文件属于历史诊断，不描述当前可用性。
-
-## 已执行的验证层次
-
-| 验证层 | 实际结果 |
-| :--- | :--- |
-| Rust 默认 feature 主机测试 | 42 项原测试 + 5 项发布回归，47/47 通过 |
-| Rust format feature 主机测试 | 42 项原测试 + 6 项发布回归，48/48 通过 |
-| Python 工具/独立参考模型 | 35/35 通过 |
-| 共享汇编、链接器与 C ABI | 10 项检查通过，含 100 次中断往返 |
-| RV32I Rust 固件 | 20/20 构建成功，指令及静态内存审计通过 |
-| 独立 Python CPU | 9 个实际 Rust HEX 交互场景通过 |
-| 官方 emulsiV JavaScript 核心 | 20/20 启动测试，每例 30,000 条指令；10 项交互/显示协议检查通过 |
-
-官方上游固定提交：`9e15421cd33511d4d2911fea1ae41cd65f33dae9`。
-`tools/upstream_smoke.mjs` 导入未修改的 Processor、Bus、Memory、TextIO、GPIO、
-BitmapOutput 和 HEX 解析器，不重新实现它们。测试拒绝上游版本不符或存在未提交修改。
-Bitmap 视图测试调用上游 BitmapOutputView，使用无界面的 canvas 适配器，
-验证 1024 个像素、全部 256 种 RGB332 编码对应的渲染颜色。
-
-Python 与上游场景覆盖文本回显、GPIO 输入输出、Bitmap、绘图、两种 IRQ、
-分号行提交，以及 Shell 的 GPIO/像素操作、非法坐标、整数溢出、额外参数、
-超长整行拒绝与恢复。数值解析回归还覆盖 4096 个伪随机 u32 的四种表示。
-
-增强验收 `tools/verify_upstream.mjs` 已进一步为全部 20 个固件执行行为断言，
-每例至少 100000 条指令；文本 IRQ 与 GPIO IRQ **各完成 100 次进入/返回**。
-所有测试路径的最大观测栈使用为 160/512 字节，未发现非法指令或总线/栈越界。
-它已纳入统一发布门禁，结果写入 `upstream-verification.json`，并与原上游冒烟结果一并打包。
-
-## 本轮修复
-
-1. 纠正 RGB332 协议：红 7..5、绿 4..2、蓝 1..0，而不是三个单独高位。
-   更新颜色常量、256 色调色板、绘图示例、RGB888 量化和断言。
-2. Shell 数字前缀检测和命令参数共享解析；MMIO 常量调用内联消除冗余检查，
-   不取消安全驱动的地址限制；减少 Shell 重复的逐键输出。
-3. Shell 与 line_console 支持用 `;` 提交，适配过滤 Enter 的官方 TextInputView。
-4. 汇编测试自动回退至 Rust 自带 LLD；清除无用 unsafe 告警。
-
-## 内存与测试边界
-
-默认普通 RAM 3072 字节，framebuffer 1024 字节，保留栈 512 字节。
-最终 Shell 静态镜像结束地址为 2528，因此剩余静态空间为 **32 字节**。
-独立模型与官方核心在已测 Shell 交互路径上均观测到 **160 字节**栈使用。
-这是样本执行观测，不是任意输入/任意程序的最坏情况栈证明。
-全部示例构建采用默认 feature；format feature 的主机测试不代表全部固件开启格式化也能放下。
-
-本轮没有浏览器完整 DOM、键盘、鼠标和页面渲染的端到端测试；
-官方核心测试与 canvas 适配器不能冒称浏览器 UI 验收。
-未执行完整 RISC-V 合规套件、形式化内存安全证明或真实硬件认证。
-软件 tick/PWM 不是毫秒，单字节 TextIO 也不是无损输入 FIFO。
-
-## 复现与报告
+## Reproduce the gates
 
 ```bash
-bash tools/verify.sh /path/to/pinned/emulsiV
+cargo xtask fetch-upstream
+cargo xtask verify
 ```
 
-成功必须以 `ALL_RELEASE_GATES_PASSED` 结束。`dist/` 输出包括：
+Use the fixed Rust 1.85.1 toolchain on Linux x86_64.
+The official emulator must be a clean checkout at `9e15421cd33511d4d2911fea1ae41cd65f33dae9`.
+The tools do not invoke Python, Node, Clang, objcopy, or the archived scripts.
 
-- `verification.log`：全部验收命令的原始输出。
-- `build-report.json` 和每例 JSON：ISA、链接布局与 ELF SHA256。
-- `runtime-verification.json`：汇编启动、中断和内存 ABI。
-- `rust-smoke.json`：独立参考 CPU 场景。
-- `upstream-smoke.json`：上游版本、20 例启动观测和交互场景。
-- `upstream-verification.json`：20 例完整行为验收、各 100 次文本/GPIO IRQ 和逐指令栈观测。
+## Validation layers
 
-上述报告随预览版固件 ZIP 发布，`manifest.json` 记录源码提交号和逐文件 SHA256。
-GitHub Actions 使用同一验收脚本；远端 CI 状态以 Actions 运行记录为准。
+| Layer | Coverage |
+| :--- | :--- |
+| Documentation | Required bilingual sections, matching code blocks, local links, and all example names |
+| Source quality | Rust formatting, Clippy for the library and xtask, and Git whitespace checks |
+| Host tests | Default, format, heap, heap+format, and no-default feature configurations |
+| Heap tests | Alignment, zeroing, exhaustion, failure preservation, fragmentation, adjacent reuse, random live-block integrity |
+| Rust task tests | ELF/HEX errors, ISA whitelist, CPU arithmetic, MMIO, IRQ, archive integrity, stale evidence rejection |
+| Assembly ABI | Fixed vectors, poisoned BSS, preserved framebuffer, 100 IRQ register roundtrips, memory functions, strong handler override |
+| Firmware builds | All 25 examples, correct required features, ELF audit, static RAM and heap extents, HEX roundtrip |
+| Rust reference CPU | Every example's behavior, not just startup |
+| Official core in Boa | The same Rust assertions against the unmodified upstream CPU and devices |
+| Display protocol | The upstream Bitmap view converts all 256 RGB332 encodings through Rust-native canvas callbacks |
+| Cargo distribution | Standard package verification and a separate application using the extracted package |
+
+Each firmware begins with 100000 executed instructions in each engine.
+Interactive tests add input and run additional instructions.
+TextIO IRQ and GPIO IRQ tests each complete 100 entries and returns.
+The heap examples verify a real Box address, Vec growth, String content, 100 reuse cycles, and OOM recovery.
+
+The independent Rust CPU and the official CPU are separate implementations.
+The official ES modules are loaded as external source files through Boa's module API.
+Rust controls execution and assertions. No project JavaScript harness is evaluated.
+This preserves the upstream comparison without requiring a Node installation.
+
+## Evidence and release binding
+
+Output is written to `dist/preview2/`.
+`verification.json` records the source commit, source fingerprint, version, clean-tree state, and artifact hashes.
+A build invalidates an earlier verification receipt.
+Packaging checks the receipt against the current source and every recorded file.
+It also requires complete build and behavior coverage.
+
+The firmware ZIP includes ELF files, HEX files, per-image reports, both engine reports, package checks, and the frozen command log.
+`manifest.json` stores SHA256 values for every other archive member.
+The ZIP uses sorted member names, fixed ZIP timestamps, and the Stored compression method.
+The same inputs produce the same ZIP bytes. Logs and host paths can differ between separate validation runs.
+A ZIP checksum is an integrity check, not an authenticity signature.
+
+`cargo xtask release` additionally verifies the remote commit and successful CI before creating the release.
+It refuses an existing tag or release instead of overwriting it.
+It does not change repository visibility or upload to crates.io.
+
+## Limits
+
+No complete browser UI, DOM, keyboard, or mouse end-to-end test is included.
+The canvas adapter tests the upstream conversion method, not a browser renderer.
+The project has not completed the full RISC-V conformance suite or a formal memory-safety proof.
+It does not claim an exhaustive heap/interrupt interleaving test.
+
+Recorded stack usage applies only to executed paths.
+It is not a worst-case bound for arbitrary applications or inputs.
+Host `format` tests do not imply that every target example fits when all features are enabled.
+Software ticks are not wall-clock time. TextIO remains a one-byte hardware latch.
+
+## 中文说明
+
+本文件说明发布检查和证据格式，具体提交是否通过以生成报告和 Actions 结果为准。
+所有测试工具均为 Rust，不调用历史 Python、Node 或 Shell 工具。
+两种 CPU 使用相同的 Rust 行为断言，但 CPU 实现相互独立。
+官方 JavaScript 模块保持原样，由 Rust Boa 引擎执行。
+
+发布记录绑定源码提交、源码指纹和每个产物摘要。
+重新构建会使旧记录失效。源码或产物变化后，必须重新验证。
+ZIP 内的 manifest 验证每个文件，外部 SHA256 验证整个 ZIP，但它们不是数字签名。
+
+测试不包含完整浏览器交互，也不是形式化内存安全或最坏情况栈上界证明。
+默认栈仍为 512 字节，堆不得侵入栈或帧缓冲。
+历史版本的故障和验证记录保留在 Git 历史及历史目录中，不代表本版本的结果。

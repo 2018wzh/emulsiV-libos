@@ -1,60 +1,99 @@
-# 开发、扩展与移植
+# Application integration / 应用集成
 
-## 工作区恢复
+## Create a separate application
 
-2026-09-23 MCPX 恢复后，项目已在 `/home/wzh/PlayGround/emulsiV-libos` 恢复，
-实际 Rust 编译、全部示例和双模拟器验证已执行。当前结果见 `VERIFICATION.md`。
-在新的环境中，可通过 GitHub 克隆或把 Git bundle 放到目标主机恢复历史：
+Use Rust 1.85.1 and target `riscv32i-unknown-none-elf`.
+Place the following files in a new application directory outside this workspace.
+Copy `link.x` from the same emulsiV-libos release into that directory.
 
-```bash
-cd /home/wzh/PlayGround
-git clone /path/to/emulsiV-libos.bundle emulsiV-libos
-cd emulsiV-libos
-cargo test --locked --lib --tests
-python3 tools/build.py --all
+`Cargo.toml`:
+
+```toml
+[package]
+name = "my-emulsiv-app"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+emulsiv-libos = { git = "https://github.com/2018wzh/emulsiV-libos.git", tag = "v0.1.0-preview.2", features = ["heap"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
 ```
 
-不要将未完成的构建描述为通过。优先修复 Rust 编译错误与超预算示例，再在上游界面实测。
+`rust-toolchain.toml`:
 
-## 新建程序
+```toml
+[toolchain]
+channel = "1.85.1"
+profile = "minimal"
+targets = ["riscv32i-unknown-none-elf"]
+```
 
-在 `examples/name.rs` 中使用 `#![no_std]`、`#![no_main]` 和 `entry!`。
-通过同一 `Mmio` 句柄按作用域创建各外设驱动，避免无意持有长期互斥借用。
-新示例可以直接被 `python3 tools/build.py --example name` 发现。
+`build.rs`:
 
-外部应用依赖此 crate 时，要在最终应用的构建流程中加入 `link.x`。
-本 crate 中针对同包示例的 linker flags 不能假定自动传递给所有下游二进制。
+```rust
+fn main() {
+    let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    std::fs::copy("link.x", out.join("application.x")).unwrap();
+    println!("cargo:rustc-link-search={}", out.display());
+    println!("cargo:rustc-link-arg=-Tapplication.x");
+    println!("cargo:rerun-if-changed=link.x");
+}
+```
 
-## 先验证最小闭环
+Use the complete `no_std` application from the README as `src/main.rs`.
+The final application must select the linker script. A dependency's `rustc-link-arg` is not a substitute.
+Remove the `heap` feature when the application does not use heap allocation.
+Do not provide another global allocator or panic handler when the library runtime supplies them.
 
-首先构建 hello，审核 ELF 架构、两个固定入口、程序与栈地址，转换为 HEX。
-然后依次验证 TextIO、GPIO、Bitmap 和单一中断源。最后组合高级逻辑。
-不要从大量格式化输出、复杂调度或全屏双缓冲开始。
+Build the application:
 
-## 超出预算时
+```bash
+cargo build --release --target riscv32i-unknown-none-elf
+```
 
-使用 `dist/<example>.json` 查看静态镜像大小和余量。删掉未必要的消息字符串、
-通用格式化、多余拷贝和大栈数组；保持 release、LTO、单 codegen unit、opt-level=z。
-示例分开编译比把所有功能塞入一个演示菜单更符合这个平台。
+From the emulsiV-libos Git checkout, audit the resulting ELF:
 
-不要修改 RAM 起始地址来躲开固定向量，也不要放宽 linker 的 RAM 长度而不修改并验证模拟器。
-`__stack_size_override` 只允许调整真实 RAM 内的栈划分，不会增加总内存。
-减少栈必须有最坏情况调用深度与 IRQ 开销依据。
+```bash
+cargo xtask audit /absolute/path/to/my-emulsiv-app/target/riscv32i-unknown-none-elf/release/my-emulsiv-app
+```
 
-## 新外设与测试
+For automatic HEX output, add the program under this repository's `examples/` directory and use `cargo xtask build NAME`.
+To convert an external ELF, use `cargo xtask hex INPUT_ELF OUTPUT_HEX`.
+The command audits the ELF first and refuses to overwrite an existing output file.
+The supplied build command always audits an image before it writes the HEX file.
 
-新驱动优先依赖 `RegisterIo`。在主机模拟总线中记录地址、位宽和写入值，测试设备语义。
-只有新增了真实硬件映射，才能扩展 `Mmio` 的允许地址集合。
-不要通过任意地址 peek/poke 接口破坏安全驱动边界。
+## Change the hardware abstraction
 
-工具层的 `supported()` 是刻意严格的指令白名单。新的 Rust 编译器即使成功链接，
-也可能生成不兼容指令；不能直接关闭检查。检查新增指令是否受上游 Virgule 支持。
+Keep drivers behind `RegisterIo` and graphics behind `PixelTarget`.
+Add a host test before changing a device register rule.
+A new interrupt source requires a new review of the global allocator's serialization.
+A new target requires startup, ABI, instruction, and memory validation.
 
-## 上游一致性与后续验证
+Do not enlarge the linker RAM region to suppress a size failure.
+Do not assume `riscv-rt` is compatible with Virgule's nonstandard interrupt model.
+Do not use `spin_loop`, WFI, atomics, or CSR operations without auditing the generated instructions.
 
-官方上游固定为 `9e15421cd33511d4d2911fea1ae41cd65f33dae9`。
-完整命令为 `bash tools/verify.sh /path/to/upstream`。
-Bitmap 是 RGB332 256 色；不要用三个高位模拟独立 RGB 通道。
-Shell 和 line_console 用分号提交，CR/LF 字节注入同样受支持。
-浏览器完整 UI 端到端测试和所有可能路径的栈上界证明仍未完成。
-新增功能必须重新运行验证，不要把当前测试结论自动扩展到修改后的固件。
+## Verify the distributed package
+
+`cargo xtask crate-check` runs Cargo's package verification.
+It then builds a separate heap application against the extracted package.
+The test checks that the distributed library and linker script work outside the original workspace.
+The check does not upload to crates.io.
+
+## 中文说明
+
+在工作区外创建独立应用，并复制同一发布版本的 `link.x`。
+使用上述 Cargo、工具链和 `build.rs` 配置，再将 README 中的完整裸机程序保存为 `src/main.rs`。
+应用必须明确指定最终链接脚本，不能只依赖库的构建参数。
+不用堆时，应移除依赖中的 `heap` feature。
+
+修改外设映射时，应先增加主机测试。
+增加中断源时，应重新检查全局分配器的串行化条件。
+不要通过放宽 RAM 范围或关闭指令检查来掩盖构建失败。
+`crate-check` 验证独立下游应用，不会发布到 crates.io。

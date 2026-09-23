@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0-preview.2 (2026-09-23)
+
+Add an optional reclaiming 16-byte-granule heap and the target global allocator.
+Add heap statistics, fallible raw allocation, and failure-preserving reallocation.
+Add eight host heap tests and five target examples for Box, Vec, String, reuse, and OOM.
+Keep all 20 existing examples and the stock 512-byte stack reservation.
+
+Replace the active Python, Shell, and Node tools with a Rust xtask workspace member.
+Use rustc and bundled LLD for assembly checks, and Boa for the unmodified official core.
+Add Rust archive checks, source-bound evidence, Cargo package verification, and downstream integration checks.
+Provide complete English and Chinese README files with synchronized code blocks.
+Keep old scripts as historical text only. GitHub release does not imply crates.io publication.
+
 ## 0.1.0-preview.1 (2026-09-23)
 
 Restored the exact project history into MCPX PlayGround and validated Rust 1.85.1.

@@ -10,7 +10,9 @@ fn on_interrupt() {
     let mut gpio = os::gpio::Gpio::new(&mut bus);
     let events = gpio.edges();
     gpio.clear_all_edges();
-    if events.rising & 0x8000_0000 != 0 { gpio.toggle(1); }
+    if events.rising & 0x8000_0000 != 0 {
+        gpio.toggle(1);
+    }
 }
 fn main() -> ! {
     let mut bus = unsafe { Mmio::new() };

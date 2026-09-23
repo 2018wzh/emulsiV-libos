@@ -8,5 +8,9 @@ fn main() -> ! {
     let mut bus = unsafe { Mmio::new() };
     let mut io = os::textio::TextIo::new(&mut bus);
     io.write_str("Type to echo:\n");
-    loop { if let Some(byte) = io.try_read() { io.put_byte(byte); } }
+    loop {
+        if let Some(byte) = io.try_read() {
+            io.put_byte(byte);
+        }
+    }
 }

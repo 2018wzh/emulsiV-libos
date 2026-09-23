@@ -1,4 +1,5 @@
 [alias]
+xtask = "run --locked -p xtask --"
 firmware = "build --release --target riscv32i-unknown-none-elf --examples"
 
 [target.riscv32i-unknown-none-elf]

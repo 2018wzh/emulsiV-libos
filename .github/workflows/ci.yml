@@ -8,25 +8,20 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install assembly validation tools
-        run: sudo apt-get update && sudo apt-get install -y clang lld
-      - name: Install pinned Rust toolchain
+      - name: Install the fixed Rust toolchain
         run: rustup show
-      - name: Fetch pinned official simulator
-        run: |
-          git init "$RUNNER_TEMP/emulsiv-upstream"
-          git -C "$RUNNER_TEMP/emulsiv-upstream" fetch --depth 1 https://github.com/ESEO-Tech/emulsiV.git 9e15421cd33511d4d2911fea1ae41cd65f33dae9
-          git -C "$RUNNER_TEMP/emulsiv-upstream" checkout --detach FETCH_HEAD
-      - name: Host tests, assembly ABI, all firmware and two simulators
-        run: bash tools/verify.sh "$RUNNER_TEMP/emulsiv-upstream"
+      - name: Fetch the fixed official simulator
+        run: cargo xtask fetch-upstream
+      - name: Run the Rust release gates
+        run: cargo xtask verify
+      - name: Package the verified commit
+        run: cargo xtask package
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: firmware-and-verification
-          path: dist/
+          path: dist/preview2/
           if-no-files-found: error
