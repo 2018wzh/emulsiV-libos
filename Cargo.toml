@@ -1,0 +1,28 @@
+[package]
+name = "emulsiv-libos"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "A small allocation-free Rust library OS for emulsiV / Virgule"
+license = "MIT"
+readme = "README.md"
+build = "build.rs"
+
+[features]
+default = ["runtime"]
+runtime = []
+format = []
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = true
+strip = false
+
+[lib]
+path = "src/lib.rs"

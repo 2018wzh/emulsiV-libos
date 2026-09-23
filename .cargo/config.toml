@@ -1,0 +1,5 @@
+[alias]
+firmware = "build --release --target riscv32i-unknown-none-elf --examples"
+
+[target.riscv32i-unknown-none-elf]
+rustflags = ["-C", "relocation-model=static"]

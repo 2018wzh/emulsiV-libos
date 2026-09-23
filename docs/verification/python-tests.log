@@ -1,0 +1,40 @@
+test_reject_bad_load_address (test_tools.ElfTests.test_reject_bad_load_address) ... ok
+test_reject_compressed_flag (test_tools.ElfTests.test_reject_compressed_flag) ... ok
+test_reject_missing_symbols (test_tools.ElfTests.test_reject_missing_symbols) ... ok
+test_reject_nonzero_entry (test_tools.ElfTests.test_reject_nonzero_entry) ... ok
+test_reject_over_budget (test_tools.ElfTests.test_reject_over_budget) ... ok
+test_reject_unsupported_instruction (test_tools.ElfTests.test_reject_unsupported_instruction) ... ok
+test_truncated_headers (test_tools.ElfTests.test_truncated_headers) ... ok
+test_valid (test_tools.ElfTests.test_valid) ... ok
+test_checksum_rejected (test_tools.HexTests.test_checksum_rejected) ... ok
+test_empty_roundtrip (test_tools.HexTests.test_empty_roundtrip) ... ok
+test_eof_required (test_tools.HexTests.test_eof_required) ... ok
+test_extended_address (test_tools.HexTests.test_extended_address) ... ok
+test_overlap_rejected (test_tools.HexTests.test_overlap_rejected) ... ok
+test_random_roundtrip (test_tools.HexTests.test_random_roundtrip) ... ok
+test_records_after_eof_rejected (test_tools.HexTests.test_records_after_eof_rejected) ... ok
+test_sparse_roundtrip (test_tools.HexTests.test_sparse_roundtrip) ... ok
+test_writer_range (test_tools.HexTests.test_writer_range) ... ok
+test_addi_wrap_and_x0 (test_tools.IsaTests.test_addi_wrap_and_x0) ... ok
+test_alignment_and_unmapped_io (test_tools.IsaTests.test_alignment_and_unmapped_io) ... ok
+test_arithmetic_right_shift (test_tools.IsaTests.test_arithmetic_right_shift) ... ok
+test_basic_whitelist (test_tools.IsaTests.test_basic_whitelist) ... ok
+test_invalid_opcode (test_tools.IsaTests.test_invalid_opcode) ... ok
+test_jalr_uses_old_source (test_tools.IsaTests.test_jalr_uses_old_source) ... ok
+test_pc_alignment (test_tools.IsaTests.test_pc_alignment) ... ok
+test_shift_register_mask (test_tools.IsaTests.test_shift_register_mask) ... ok
+test_sign_extension (test_tools.IsaTests.test_sign_extension) ... ok
+test_signed_byte_load (test_tools.IsaTests.test_signed_byte_load) ... ok
+test_signed_unsigned_comparison (test_tools.IsaTests.test_signed_unsigned_comparison) ... ok
+test_framebuffer_exact_range (test_tools.PeripheralTests.test_framebuffer_exact_range) ... ok
+test_gpio_edges_and_irq (test_tools.PeripheralTests.test_gpio_edges_and_irq) ... ok
+test_gpio_partial_access (test_tools.PeripheralTests.test_gpio_partial_access) ... ok
+test_gpio_rw_not_w1c (test_tools.PeripheralTests.test_gpio_rw_not_w1c) ... ok
+test_gpio_value_direction (test_tools.PeripheralTests.test_gpio_value_direction) ... ok
+test_interrupt_mepc_and_mret (test_tools.PeripheralTests.test_interrupt_mepc_and_mret) ... ok
+test_text_latch_overwrite_and_ack (test_tools.PeripheralTests.test_text_latch_overwrite_and_ack) ... ok
+
+----------------------------------------------------------------------
+Ran 35 tests in 0.008s
+
+OK

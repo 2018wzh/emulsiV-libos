@@ -1,0 +1,31 @@
+{
+  "elf_sha256": "2723998932d3cf25b9ca7f1e8e6eee03746f1a17a4da9909f056cfbd50690fb8",
+  "entry": 0,
+  "load_bytes": 496,
+  "instruction_words": 124,
+  "image_end": 512,
+  "bss_bytes": 16,
+  "stack_reserved": 512,
+  "free_before_stack": 2048,
+  "ram_bytes": 3072,
+  "framebuffer_base": 3072,
+  "static_layout_ok": true,
+  "runtime_stack_high_water": "not measured",
+  "kind": "assembly-only runtime verification",
+  "checks": [
+    "reset vector reaches main and TextIO output",
+    "startup clears poisoned BSS",
+    "SP starts aligned immediately below framebuffer",
+    "startup does not touch framebuffer",
+    "100 IRQ entries preserve all integer registers and return PC",
+    "IRQ wrapper uses exactly 64 bytes in assembly fixture",
+    "IRQ fixture leaves framebuffer intact",
+    "C ABI memory primitives handle zero lengths, alignment and both overlap directions",
+    "linker rejects a deliberately oversized RAM reservation",
+    "strong application IRQ callback overrides linker-provided default"
+  ],
+  "irq_roundtrips": 100,
+  "observed_min_sp": 3008,
+  "rust_compilation": "not performed by this test",
+  "upstream_emulsiv": "not executed by this test"
+}
