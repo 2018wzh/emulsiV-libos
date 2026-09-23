@@ -19,10 +19,12 @@ def main():
     if set(report) != set(names) or not all(report[n].get("static_layout_ok") for n in names):
         raise SystemExit("Build report does not cover every example successfully")
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    if f"SOURCE_COMMIT={source}" not in log.splitlines():
+        raise SystemExit("Verification log belongs to a different source commit; rerun tools/verify.sh")
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip():
         raise SystemExit("Commit/review source changes before packaging")
     payload = {f"firmware/{n}.hex":(DIST/f"{n}.hex").read_bytes() for n in names}
-    for filename in ["build-report.json", "runtime-verification.json", "rust-smoke.json", "upstream-smoke.json", "verification.log"]:
+    for filename in ["build-report.json", "runtime-verification.json", "rust-smoke.json", "upstream-smoke.json", "upstream-verification.json", "verification.log"]:
         payload[f"reports/{filename}"] = (DIST/filename).read_bytes()
     payload["VERIFICATION.md"] = (ROOT/"docs/VERIFICATION.md").read_bytes()
     payload["README.md"] = (ROOT/"README.md").read_bytes()

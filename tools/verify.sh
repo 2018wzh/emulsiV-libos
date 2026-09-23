@@ -6,6 +6,7 @@ UPSTREAM="${1:-${EMULSIV_UPSTREAM:-$ROOT/../.emulsiv-upstream}}"
 cd "$ROOT"
 mkdir -p dist
 {
+    printf 'SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)"
     rustc --version
     cargo --version
     python3 --version
@@ -17,6 +18,7 @@ mkdir -p dist
     python3 tools/build.py --all
     python3 tools/smoke.py
     node tools/upstream_smoke.mjs "$UPSTREAM"
+    node tools/verify_upstream.mjs "$UPSTREAM"
     git diff --check
     printf 'ALL_RELEASE_GATES_PASSED\n'
 } 2>&1 | tee dist/verification.log

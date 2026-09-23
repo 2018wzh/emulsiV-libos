@@ -33,6 +33,11 @@ Python 与上游场景覆盖文本回显、GPIO 输入输出、Bitmap、绘图�
 分号行提交，以及 Shell 的 GPIO/像素操作、非法坐标、整数溢出、额外参数、
 超长整行拒绝与恢复。数值解析回归还覆盖 4096 个伪随机 u32 的四种表示。
 
+增强验收 `tools/verify_upstream.mjs` 已进一步为全部 20 个固件执行行为断言，
+每例至少 100000 条指令；文本 IRQ 与 GPIO IRQ **各完成 100 次进入/返回**。
+所有测试路径的最大观测栈使用为 160/512 字节，未发现非法指令或总线/栈越界。
+它已纳入统一发布门禁，结果写入 `upstream-verification.json`，并与原上游冒烟结果一并打包。
+
 ## 本轮修复
 
 1. 纠正 RGB332 协议：红 7..5、绿 4..2、蓝 1..0，而不是三个单独高位。
@@ -68,6 +73,7 @@ bash tools/verify.sh /path/to/pinned/emulsiV
 - `runtime-verification.json`：汇编启动、中断和内存 ABI。
 - `rust-smoke.json`：独立参考 CPU 场景。
 - `upstream-smoke.json`：上游版本、20 例启动观测和交互场景。
+- `upstream-verification.json`：20 例完整行为验收、各 100 次文本/GPIO IRQ 和逐指令栈观测。
 
 上述报告随预览版固件 ZIP 发布，`manifest.json` 记录源码提交号和逐文件 SHA256。
 GitHub Actions 使用同一验收脚本；远端 CI 状态以 Actions 运行记录为准。
