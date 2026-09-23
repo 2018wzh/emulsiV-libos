@@ -2,12 +2,9 @@
 
 ## 工作区恢复
 
-本次 MCPX 在新建会话时返回 `database or disk is full (13)`。
-复用已有无运行任务的 PlayGround 会话后，携带 Activity 的目录读取仍返回
-`INVALID_ACTIVITY: database or disk is full (13)`。没有绕过审计记录，也没有清理用户文件。
-因此 `/home/wzh/PlayGround/emulsiV-libos` 并未创建。
-
-解除空间/数据库故障后，可以把 Git bundle 放到目标主机：
+2026-09-23 MCPX 恢复后，项目已在 `/home/wzh/PlayGround/emulsiV-libos` 恢复，
+实际 Rust 编译、全部示例和双模拟器验证已执行。当前结果见 `VERIFICATION.md`。
+在新的环境中，可通过 GitHub 克隆或把 Git bundle 放到目标主机恢复历史：
 
 ```bash
 cd /home/wzh/PlayGround
@@ -53,8 +50,11 @@ python3 tools/build.py --all
 工具层的 `supported()` 是刻意严格的指令白名单。新的 Rust 编译器即使成功链接，
 也可能生成不兼容指令；不能直接关闭检查。检查新增指令是否受上游 Virgule 支持。
 
-## 尚待完成
+## 上游一致性与后续验证
 
-Rust 1.85.1 实际编译、42 项 Rust 测试、20 个示例内存审核、已编译 Rust 固件 smoke tests、
-浏览器 emulsiV 实测、GitHub 新仓库创建与推送，以及 GitHub Actions 运行。
-本次已运行验证不覆盖上述项目。
+官方上游固定为 `9e15421cd33511d4d2911fea1ae41cd65f33dae9`。
+完整命令为 `bash tools/verify.sh /path/to/upstream`。
+Bitmap 是 RGB332 256 色；不要用三个高位模拟独立 RGB 通道。
+Shell 和 line_console 用分号提交，CR/LF 字节注入同样受支持。
+浏览器完整 UI 端到端测试和所有可能路径的栈上界证明仍未完成。
+新增功能必须重新运行验证，不要把当前测试结论自动扩展到修改后的固件。

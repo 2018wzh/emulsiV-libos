@@ -12,7 +12,8 @@ fn main() -> ! {
     io.write_str("> ");
     loop {
         if let Some(byte) = io.try_read() {
-            match editor.feed(byte) {
+            // Semicolon submits a line even when the browser filters Enter.
+            match editor.feed(if byte == b';' { b'\n' } else { byte }) {
                 LineEvent::Echo(b) => io.put_byte(b),
                 // TextIO is a text area, not a VT100 terminal. Echo a printable
                 // edit marker instead of assuming backspace or ANSI support.

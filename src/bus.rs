@@ -23,19 +23,24 @@ impl Mmio {
     pub const unsafe fn new() -> Self { Self { _single_hart: PhantomData } }
 }
 impl RegisterIo for Mmio {
+    // Inline to prove constant driver addresses while retaining checks for callers.
+    #[inline(always)]
     fn read8(&mut self, a: usize) -> u8 {
         assert!(a == TEXT_CTRL || a == TEXT_DATA || (FRAMEBUFFER..FRAMEBUFFER+1024).contains(&a));
         // SAFETY: constructor contract and the checked address range.
         unsafe { read_volatile(a as *const u8) }
     }
+    #[inline(always)]
     fn write8(&mut self, a: usize, v: u8) {
         assert!(a == TEXT_CTRL || a == TEXT_OUT || (FRAMEBUFFER..FRAMEBUFFER+1024).contains(&a));
         unsafe { write_volatile(a as *mut u8, v) }
     }
+    #[inline(always)]
     fn read32(&mut self, a: usize) -> u32 {
         assert!((GPIO_BASE..=GPIO_BASE+16).contains(&a) && a & 3 == 0);
         unsafe { read_volatile(a as *const u32) }
     }
+    #[inline(always)]
     fn write32(&mut self, a: usize, v: u32) {
         assert!((GPIO_BASE..=GPIO_BASE+16).contains(&a) && a & 3 == 0);
         unsafe { write_volatile(a as *mut u32, v) }

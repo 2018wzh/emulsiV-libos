@@ -22,20 +22,16 @@ fn main() -> ! {
     let mut bus = unsafe { Mmio::new() };
     let mut editor = LineEditor::<32>::new();
     os::gpio::Gpio::new(&mut bus).set_direction(0xffff_0000);
-    os::textio::TextIo::new(&mut bus).write_str("? for help\n> ");
+    os::textio::TextIo::new(&mut bus).write_str("?; for help\n");
     loop {
         if let Some(byte) = os::textio::TextIo::new(&mut bus).try_read() {
-            match editor.feed(byte) {
-                LineEvent::Complete => {
-                    os::textio::TextIo::new(&mut bus).put_byte(b'\n');
-                    execute(&mut bus,editor.line());
-                    os::textio::TextIo::new(&mut bus).write_str("> ");
-                }
-                LineEvent::Echo(b) => os::textio::TextIo::new(&mut bus).put_byte(b),
-                LineEvent::Overflow => os::textio::TextIo::new(&mut bus).write_str("\noverflow\n> "),
-                LineEvent::Cleared|LineEvent::Cancelled => os::textio::TextIo::new(&mut bus).write_str("\n> "),
-                LineEvent::Erase => os::textio::TextIo::new(&mut bus).put_byte(b'<'),
-                LineEvent::None => {}
+            // Stock browser TextIO ignores special keys such as Enter.
+            match editor.feed(if byte == b';' { b'\n' } else { byte }) {
+                LineEvent::Complete => execute(&mut bus,editor.line()),
+                LineEvent::Overflow => os::textio::TextIo::new(&mut bus).write_str("overflow\n"),
+                // The browser input area already displays typed characters.
+                // See line_console for explicit output-side edit markers.
+                _ => {}
             }
         }
     }

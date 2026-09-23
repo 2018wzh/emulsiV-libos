@@ -3,10 +3,11 @@
 面向 **ESEO-Tech emulsiV / Virgule** 的 Rust `no_std`、无堆依赖教学型 library OS。
 不是 Linux、POSIX 兼容层，也不是带虚拟内存的完整操作系统。
 
-> **当前状态：开发快照，尚未完成 Rust 编译验证或 GitHub 发布。**
-> 2026-09-23：35 项 Python 工具/参考模型测试通过；共享启动汇编、链接脚本、
-> 中断 ABI 和内存函数完成汇编级验证。42 项 Rust 主机测试已编写，但尚未运行。
-> Rust 示例能否全部放入默认 3 KiB RAM 尚未确认，不能把提供源代码等同于固件可运行。
+> **当前状态：经过实际验证的教学预览版。**
+> 2026-09-23，在 MCPX PlayGround 使用 Rust 1.85.1 完成 47 项默认配置、
+> 48 项 format 配置 Rust 测试；全部 20 个示例通过 RV32I 构建和内存审核。
+> 独立 Python CPU 通过 9 个固件场景；未修改的官方 emulsiV 核心启动全部 20 个示例，
+> 并通过 10 项交互/显示协议检查。浏览器完整 UI 操作未做端到端测试。
 > 详见 [验证记录](docs/VERIFICATION.md)。
 
 ## 功能
@@ -15,7 +16,7 @@
 | :--- | :--- |
 | `textio` | 字节输入输出、非阻塞轮询、有限次数轮询、输入中断控制、精简整数/十六进制输出 |
 | `gpio` | 方向配置、按位输出、翻转、输入采样、边沿事件、中断掩码、带边界检查的引脚编号 |
-| `bitmap` | 8 色 framebuffer、裁剪像素、直线、矩形、实心矩形、圆、3×5 ASCII 字体、文字、滚屏、透明单色贴图 |
+| `bitmap` | RGB332 256 色 framebuffer、裁剪像素、直线、矩形、实心矩形、圆、3×5 ASCII 字体、文字、滚屏、透明单色贴图 |
 | `MonoBuffer` | 128 字节单色离屏缓冲，显示时选择前景色和背景色 |
 | `console` | 固定容量行编辑、CR/LF、退格、Delete、Ctrl-U、Ctrl-C、整行溢出拒绝 |
 | `queue` / `event` | 固定容量泛型 FIFO、显式满队列错误、类型化事件队列 |
@@ -44,7 +45,9 @@
 ```
 
 GPIO `DIR=1` 表示输入。**GPIO 边沿事件寄存器是普通可写寄存器，不是写 1 清除。**
-Framebuffer 每字节的 bit7/6/5 分别对应红、绿、蓝。
+Framebuffer 使用 **RGB332**：bit7..5 为红，bit4..2 为绿，bit1..0 为蓝。
+`RED=0xe0`、`GREEN=0x1c`、`BLUE=0x03`、`WHITE=0xff`。
+`Color::from_bits` 保留全部 8 位；`Color::from_rgb888` 可将 8 位 RGB 通道量化。
 不使用 CSR、ECALL、WFI、FENCE、压缩指令、原子指令或硬件乘除法。
 
 ## 构建
@@ -83,11 +86,11 @@ python3 tools/rv32.py dist/text_echo.hex --input 'Hello' --steps 10000
 | :--- | :--- |
 | `hello` | 输出欢迎文本 |
 | `text_echo` | 前台轮询回显 |
-| `line_console` | 行编辑和完整行回显 |
+| `line_console` | 行编辑和完整行回显，以 `;` 提交 |
 | `gpio_mirror` | GPIO16..31 输入映射到 GPIO0..15 输出 |
 | `gpio_debounce` | GPIO31 按钮消抖后翻转 GPIO0 |
 | `gpio_pwm` | GPIO0 的 16 tick 周期、4 tick 高电平 PWM |
-| `bitmap_palette` | 显示 8 色条纹 |
+| `bitmap_palette` | 显示完整 256 色 RGB332 调色板 |
 | `bitmap_shapes` | 直线、矩形、实心块、圆 |
 | `bitmap_text` | 绘制字母和数字 |
 | `mono_sprite` | 单色 sprite 经 128 字节缓冲显示 |
@@ -97,7 +100,7 @@ python3 tools/rv32.py dist/text_echo.hex --input 'Hello' --steps 10000
 | `irq_gpio` | GPIO31 上升沿中断翻转 GPIO0 |
 | `crc_demo` | 已知输入的 CRC 校验值 |
 | `arena_demo` | 显式对齐内存分配 |
-| `shell` | 文本命令控制 GPIO 和 Bitmap，组合体积风险较高 |
+| `shell` | 文本命令控制 GPIO 和 Bitmap，以 `;` 提交；静态镜像 2528 字节 |
 | `random_pixels` | 确定性伪随机彩色像素 |
 | `diagnostics` | 链接布局和瞬时剩余栈空间 |
 | `paint` | WASD 移动画笔、0..7 选色、c 清屏，并翻转 GPIO0 |
@@ -108,14 +111,19 @@ python3 tools/rv32.py dist/text_echo.hex --input 'Hello' --steps 10000
 ### shell 命令
 
 ```text
-?                 查看命令
-r                 读取 GPIO
-w 0x55aa          修改低 16 个输出脚
-c 0               黑色清屏
-p 16 16 0x80      在 (16,16) 画红色像素
+?;                查看命令
+r;                读取 GPIO
+w 0x55aa;         修改低 16 个输出脚
+c 0;              黑色清屏
+p 16 16 0xe0;     在 (16,16) 画红色像素
+p 17 16 0x03;     在 (17,16) 画蓝色像素
 ```
 
+每次输入一条命令，等待处理后再输入下一条，不要把多字符粘贴当作串口发送。
+官方 TextIO 界面过滤 Enter 等多字符键名，因此两个行输入示例额外用 `;` 提交。
+直接注入 CR/LF 字节仍受支持；Shell 利用输入区显示已键入内容，不重复逐字符回显。
 状态和参数采用严格解析。超长行整行拒绝，不执行前缀。
+Shell 保留 512 字节栈后仅余 **32 字节**静态空间，扩展时必须重新审核。
 TextIO 是文本区域而非 VT100 终端；退格示例输出 `<` 标记，不假定 ANSI 控制序列可用。
 控制字节能否从键盘直接送入取决于上游输入界面，测试也可以直接注入字节。
 
@@ -142,20 +150,32 @@ fn main() -> ! {
 
 ```bash
 python3 -m unittest discover -s tools -p 'test_*.py' -v
-python3 tools/check_runtime.py  # 需要 clang 和 ld.lld，编译汇编测试夹具
+python3 tools/check_runtime.py  # clang + ld.lld 或 Rust 自带 rust-lld
 cargo test --locked --lib --tests
 cargo test --locked --features format --lib --tests
 cargo fmt --all                # 统一 Rust 源码排版
 ```
 
 `format` feature 为 TextIO 增加 `core::fmt::Write`；默认使用更精简的数字输出函数。
-请注意格式化代码可能增加固件体积。CI 文件已提供，但本次尚未上传触发。
+请注意格式化代码可能增加固件体积。全部示例固件按默认 feature 构建。
+完整验收入口（需要 Node 22.7+ 及固定版本的上游源码）：
+
+```bash
+git init ../.emulsiv-upstream
+git -C ../.emulsiv-upstream fetch --depth 1 https://github.com/ESEO-Tech/emulsiV.git 9e15421cd33511d4d2911fea1ae41cd65f33dae9
+git -C ../.emulsiv-upstream checkout --detach FETCH_HEAD
+bash tools/verify.sh
+```
+
+仅在尚无上游检出时执行以上初始化步骤。已有目录请保持干净且版本一致。
+也可运行 `bash tools/verify.sh /path/to/emulsiV`。输出保存到 `dist/verification.log`。
+GitHub Actions 执行相同入口；运行结果以 Actions 页面为准。
 
 ## GitHub 发布
 
-本次没有成功上传 GitHub。MCPX 报告数据库或磁盘已满，后续诊断及工作区查询返回 HTTP 502；
-当前 GitHub 连接的工具也没有新建 repository 的操作。
-本地源码与 Git bundle 已准备好，发布脚本不会泄漏 token，也不会强推。
+目标仓库为 `2018wzh/emulsiV-libos`。发布脚本默认创建私有仓库，
+不会泄漏 token，不覆盖无关 origin，也不会强推。预览版固件包包含 20 个 HEX、
+原始验证日志、审计报告、源码提交号和 SHA256 清单。
 
 ```bash
 # 从提供的 bundle 恢复完整提交记录。
@@ -166,7 +186,8 @@ bash tools/publish.sh
 ```
 
 脚本只向登录用户 `2018wzh` 的 `emulsiV-libos` 仓库发布，首次创建默认使用 private。
-它会先执行 Rust 测试、全部示例构建和参考 CPU smoke tests；失败就停止。
+它会先执行 `tools/verify.sh` 的全部检查，包括上游模拟器；失败就停止。
+提交源码且验收成功后，`python3 tools/package.py` 生成可校验的预览版固件 ZIP。
 既有 origin 不匹配目标仓库时会拒绝推送。
 
 ## 文档

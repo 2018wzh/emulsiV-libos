@@ -16,7 +16,7 @@ fn main()->! {
             match b {
                 b'w'=>y=(y-1)&31,b's'=>y=(y+1)&31,
                 b'a'=>x=(x-1)&31,b'd'=>x=(x+1)&31,
-                b'0'..=b'7'=>color=Color::from_bits((b-b'0')<<5),
+                b'0'..=b'7'=>{let n=b-b'0';color=Color::from_rgb(n&4!=0,n&2!=0,n&1!=0);},
                 b'c'=>Bitmap::new(&mut bus).clear(Color::BLACK),_=>{}
             }
             Bitmap::new(&mut bus).pixel(x,y,color);

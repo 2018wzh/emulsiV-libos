@@ -74,7 +74,7 @@ impl RegisterIo for MockBus {
 }
 #[test] fn pixel_address_and_color() {
     let mut b=MockBus::default();Bitmap::new(&mut b).pixel(31,31,Color::RED);
-    assert_eq!(b.pixels[1023],0x80);assert_eq!(Color::from_bits(0xff),Color::WHITE);
+    assert_eq!(b.pixels[1023],0xe0);assert_eq!(Color::from_bits(0xff),Color::WHITE);
     assert_eq!(Color::from_rgb(false,true,true),Color::CYAN);
 }
 #[test] fn pixels_outside_are_ignored() {
@@ -84,7 +84,7 @@ impl RegisterIo for MockBus {
 }
 #[test] fn framebuffer_clear() {
     let mut b=MockBus::default();Bitmap::new(&mut b).clear(Color::BLUE);
-    assert!(b.pixels.iter().all(|&p|p==0x20));assert_eq!(b.writes,1024);
+    assert!(b.pixels.iter().all(|&p|p==0x03));assert_eq!(b.writes,1024);
 }
 #[test] fn fill_rectangle_clips() {
     let mut b=MockBus::default();bitmap::fill_rect(&mut Bitmap::new(&mut b),-2,-2,4,4,Color::RED);
@@ -97,7 +97,7 @@ impl RegisterIo for MockBus {
 #[test] fn line_diagonal() {
     let mut b=MockBus::default();bitmap::line(&mut Bitmap::new(&mut b),0,0,31,31,Color::WHITE);
     assert_eq!(b.pixels.iter().filter(|&&p|p!=0).count(),32);
-    for i in 0..32 {assert_eq!(b.pixels[i*33],0xe0);}
+    for i in 0..32 {assert_eq!(b.pixels[i*33],0xff);}
 }
 #[test] fn line_reverse_and_negative() {
     let mut b=MockBus::default();bitmap::line(&mut Bitmap::new(&mut b),4,0,-4,0,Color::GREEN);
@@ -109,7 +109,7 @@ impl RegisterIo for MockBus {
 }
 #[test] fn scroll_retains_order() {
     let mut b=MockBus::default();for y in 0..32 {b.pixels[y*32..y*32+32].fill(((y%8) as u8)<<5);}
-    Bitmap::new(&mut b).scroll_up(1,Color::WHITE);assert_eq!(b.pixels[0],0x20);assert_eq!(b.pixels[1023],0xe0);
+    Bitmap::new(&mut b).scroll_up(1,Color::WHITE);assert_eq!(b.pixels[0],0x20);assert_eq!(b.pixels[1023],0xff);
     Bitmap::new(&mut b).scroll_up(255,Color::BLACK);assert!(b.pixels.iter().all(|&v|v==0));
 }
 #[test] fn sprite_truncated_is_transactional() {
@@ -122,7 +122,7 @@ impl RegisterIo for MockBus {
     let mut m=bitmap::MonoBuffer::new();m.pixel(0,0,Color::WHITE);m.pixel(31,31,Color::RED);
     assert_eq!(m.bytes()[0],0x80);assert_eq!(m.bytes()[127],1);
     let mut b=MockBus::default();m.present(&mut Bitmap::new(&mut b),Color::CYAN,Color::BLACK);
-    assert_eq!(b.pixels[0],0x60);assert_eq!(b.pixels[1023],0x60);
+    assert_eq!(b.pixels[0],0x1f);assert_eq!(b.pixels[1023],0x1f);
 }
 #[test] fn font_space_is_empty() {
     let mut b=MockBus::default();bitmap::draw_char(&mut Bitmap::new(&mut b),0,0,b' ',Color::WHITE);

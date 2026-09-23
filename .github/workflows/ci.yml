@@ -10,25 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install assembly validation tools
         run: sudo apt-get update && sudo apt-get install -y clang lld
       - name: Install pinned Rust toolchain
         run: rustup show
-      - name: Host Rust regression tests
+      - name: Fetch pinned official simulator
         run: |
-          cargo test --locked --lib --tests
-          cargo test --locked --features format --lib --tests
-      - name: Python reference and tool tests
-        run: python3 -m unittest discover -s tools -p 'test_*.py' -v
-      - name: Startup, IRQ ABI, memory ABI and linker checks
-        run: python3 tools/check_runtime.py
-      - name: Compile and audit all Rust firmware
-        run: python3 tools/build.py --all
-      - name: Execute selected Rust firmware in reference model
-        run: python3 tools/smoke.py
+          git init "$RUNNER_TEMP/emulsiv-upstream"
+          git -C "$RUNNER_TEMP/emulsiv-upstream" fetch --depth 1 https://github.com/ESEO-Tech/emulsiV.git 9e15421cd33511d4d2911fea1ae41cd65f33dae9
+          git -C "$RUNNER_TEMP/emulsiv-upstream" checkout --detach FETCH_HEAD
+      - name: Host tests, assembly ABI, all firmware and two simulators
+        run: bash tools/verify.sh "$RUNNER_TEMP/emulsiv-upstream"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: firmware-and-verification
           path: dist/
-          if-no-files-found: ignore
+          if-no-files-found: error

@@ -7,16 +7,22 @@ pub const HEIGHT: u16 = 32;
 pub struct Color(u8);
 impl Color {
     pub const BLACK: Self = Self(0x00);
-    pub const BLUE: Self = Self(0x20);
-    pub const GREEN: Self = Self(0x40);
-    pub const CYAN: Self = Self(0x60);
-    pub const RED: Self = Self(0x80);
-    pub const MAGENTA: Self = Self(0xa0);
-    pub const YELLOW: Self = Self(0xc0);
-    pub const WHITE: Self = Self(0xe0);
-    pub const fn from_bits(bits: u8) -> Self { Self(bits & 0xe0) }
+    pub const BLUE: Self = Self(0x03);
+    pub const GREEN: Self = Self(0x1c);
+    pub const CYAN: Self = Self(0x1f);
+    pub const RED: Self = Self(0xe0);
+    pub const MAGENTA: Self = Self(0xe3);
+    pub const YELLOW: Self = Self(0xfc);
+    pub const WHITE: Self = Self(0xff);
+    /// Native RGB332: red bits 7..5, green bits 4..2, blue bits 1..0.
+    pub const fn from_bits(bits: u8) -> Self { Self(bits) }
+    /// Select the eight saturated primary/secondary colors.
     pub const fn from_rgb(red: bool, green: bool, blue: bool) -> Self {
-        Self(((red as u8) << 7) | ((green as u8) << 6) | ((blue as u8) << 5))
+        Self((if red { 0xe0 } else { 0 }) | (if green { 0x1c } else { 0 }) | (if blue { 3 } else { 0 }))
+    }
+    /// Quantize 8-bit channels to the native 3/3/2-bit representation.
+    pub const fn from_rgb888(red: u8, green: u8, blue: u8) -> Self {
+        Self((red & 0xe0) | ((green >> 3) & 0x1c) | (blue >> 6))
     }
     pub const fn bits(self) -> u8 { self.0 }
 }

@@ -13,14 +13,21 @@ from rv32 import Machine
 ROOT = Path(__file__).resolve().parents[1]
 
 def main():
-    clang, linker = shutil.which("clang"), shutil.which("ld.lld")
+    clang = shutil.which("clang")
+    linker = [shutil.which("ld.lld")] if shutil.which("ld.lld") else []
+    if not linker and shutil.which("rustc"):
+        sysroot = Path(subprocess.check_output(["rustc", "--print", "sysroot"], cwd=ROOT, text=True).strip())
+        host = next(line.split(": ", 1)[1] for line in subprocess.check_output(["rustc", "-vV"], cwd=ROOT, text=True).splitlines() if line.startswith("host: "))
+        bundled = sysroot / "lib" / "rustlib" / host / "bin" / "rust-lld"
+        if bundled.is_file():
+            linker = [str(bundled), "-flavor", "gnu"]
     if not clang or not linker:
-        raise SystemExit("clang and ld.lld with RISC-V support are required")
+        raise SystemExit("clang and either ld.lld or Rust's bundled rust-lld are required")
     dist=ROOT/"dist";dist.mkdir(exist_ok=True)
     for source,target in (("src/startup.S","startup.o"),("tests/runtime_fixture.S","fixture.o"),("src/memory.S","memory.o")):
         subprocess.run([clang,"--target=riscv32-unknown-elf","-march=rv32i","-mabi=ilp32","-c",source,"-o",str(dist/target)],cwd=ROOT,check=True)
     elfpath=dist/"runtime-fixture.elf"
-    subprocess.run([linker,"-m","elf32lriscv","-T","link.x",str(dist/"startup.o"),str(dist/"fixture.o"),str(dist/"memory.o"),"-o",str(elfpath)],cwd=ROOT,check=True)
+    subprocess.run([*linker,"-m","elf32lriscv","-T","link.x",str(dist/"startup.o"),str(dist/"fixture.o"),str(dist/"memory.o"),"-o",str(elfpath)],cwd=ROOT,check=True)
     elf=Elf32(elfpath.read_bytes());image,report=elf.audit()
     (dist/"runtime-fixture.hex").write_text(to_hex(image))
     checks=[]
@@ -71,7 +78,7 @@ def main():
     assert call_memory("memcmp",0x600,0x610,2)==0
     assert call_memory("memcmp",0,0,0)==0
     checks.append("C ABI memory primitives handle zero lengths, alignment and both overlap directions")
-    negative=subprocess.run([linker,"-m","elf32lriscv","-T","link.x",
+    negative=subprocess.run([*linker,"-m","elf32lriscv","-T","link.x",
         "--defsym=__stack_size_override=3072",str(dist/"startup.o"),str(dist/"fixture.o"),
         "-o",str(dist/"must-not-fit.elf")],cwd=ROOT,capture_output=True,text=True)
     assert negative.returncode!=0 and "budget" in negative.stderr
@@ -79,7 +86,7 @@ def main():
     subprocess.run([clang,"--target=riscv32-unknown-elf","-march=rv32i","-mabi=ilp32","-c",
         "tests/irq_override.S","-o",str(dist/"override.o")],cwd=ROOT,check=True)
     override_elf=dist/"irq-override.elf"
-    subprocess.run([linker,"-m","elf32lriscv","-T","link.x",str(dist/"startup.o"),
+    subprocess.run([*linker,"-m","elf32lriscv","-T","link.x",str(dist/"startup.o"),
         str(dist/"fixture.o"),str(dist/"override.o"),"-o",str(override_elf)],cwd=ROOT,check=True)
     override=Elf32(override_elf.read_bytes());override_image,_=override.audit()
     cpu=Machine();cpu.load(override_image)

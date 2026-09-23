@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-for tool in gh git cargo python3; do
+for tool in gh git cargo python3 node clang; do
     command -v "$tool" >/dev/null || { echo "Required command unavailable: $tool" >&2; exit 1; }
 done
 [[ "$(git rev-parse --show-toplevel)" == "$ROOT" ]] || {
@@ -13,11 +13,7 @@ done
 [[ -z "$(git status --porcelain)" ]] || { echo "Commit or review local changes before publication." >&2; exit 1; }
 OWNER="$(gh api user --jq .login)"
 [[ "$OWNER" == "2018wzh" ]] || { echo "Authenticated account is not the intended owner 2018wzh." >&2; exit 1; }
-python3 -m unittest discover -s tools -p 'test_*.py'
-cargo test --locked --lib --tests
-cargo test --locked --features format --lib --tests
-python3 tools/build.py --all
-python3 tools/smoke.py
+bash tools/verify.sh
 REPO="$OWNER/emulsiV-libos"
 if git remote get-url origin >/dev/null 2>&1; then
     REMOTE="$(git remote get-url origin)"

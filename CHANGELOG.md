@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.0-preview.1 (2026-09-23)
+
+Restored the exact project history into MCPX PlayGround and validated Rust 1.85.1.
+All 20 RV32I examples now compile within stock RAM and a reserved 512-byte stack.
+Refactored Shell parsing and optimized constant-address MMIO calls; no RAM checks were weakened.
+Corrected Bitmap to native RGB332 (256 colors), added RGB888 quantization, and fixed palette/paint colors.
+Added semicolon line submission for the browser TextIO key filter.
+Added default/format regression tests (47/48), nine independent firmware scenarios, and a pinned
+upstream JavaScript-core runner covering all 20 boots and ten interaction/display checks.
+Added unified CI/publication gates, bundled LLD detection and checksummed firmware packaging.
+Browser full-UI end-to-end testing and exhaustive stack bounds remain outside this validation.
+
 ## 0.1.0 development snapshot (unreleased)
 
 Added allocation-free Rust drivers for TextIO, GPIO and Bitmap, a custom Virgule runtime,

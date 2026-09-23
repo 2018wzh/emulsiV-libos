@@ -8,7 +8,7 @@ impl<const N:usize> LineEditor<N> {
     pub const fn new()->Self { Self { data:[0;N],len:0,overflow:false,ready:false,after_cr:false } }
     pub fn line(&self)->&str {
         // SAFETY: only printable ASCII is stored.
-        unsafe { core::str::from_utf8_unchecked(&self.data[..self.len]) }
+        unsafe { core::str::from_utf8_unchecked(self.data.get(..self.len).unwrap_or_default()) }
     }
     pub fn clear(&mut self) { self.len=0; self.overflow=false; self.ready=false; }
     pub fn feed(&mut self,b:u8)->LineEvent {
@@ -26,7 +26,7 @@ impl<const N:usize> LineEditor<N> {
                 if !self.overflow && self.len>0 { self.len-=1; LineEvent::Erase } else { LineEvent::None }
             }
             32..=126 => {
-                if self.len==N || self.overflow { self.overflow=true; LineEvent::None }
+                if self.len>=N || self.overflow { self.overflow=true; LineEvent::None }
                 else { self.data[self.len]=b;self.len+=1;LineEvent::Echo(b) }
             }
             _ => LineEvent::None,

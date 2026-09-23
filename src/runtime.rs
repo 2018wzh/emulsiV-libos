@@ -52,11 +52,11 @@ pub struct MemoryInfo {pub image_end:usize,pub stack_bottom:usize,pub stack_top:
 pub fn memory_info()->MemoryInfo {
     extern "C" {static __image_end:u8;static __stack_bottom:u8;static __stack_top:u8;}
     // Only take symbol addresses. The linker symbols are not dereferenced.
-    unsafe {MemoryInfo {
+    MemoryInfo {
         image_end:core::ptr::addr_of!(__image_end) as usize,
         stack_bottom:core::ptr::addr_of!(__stack_bottom) as usize,
         stack_top:core::ptr::addr_of!(__stack_top) as usize,
-    }}
+    }
 }
 /// Remaining reserved stack at the instant of this call, including this frame.
 /// Does not measure the worst-case foreground-plus-IRQ stack usage.
